@@ -60,8 +60,8 @@ func (n *Notify) SendToWithTTL(uuid string, command string, data string, ttl int
 		if err != nil {
 			return err
 		}
-		select {
-		case <-ch:
+		for k := range ch {
+			log.Println("TTL:", k)
 		}
 	}
 
