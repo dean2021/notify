@@ -46,13 +46,10 @@ func (n *Notify) SendTo(uuid string, command string, data string) error {
 // uuid 唯一id,command 指令, data 指令数据, ttl 存活时间
 func (n *Notify) SendToWithTTL(uuid string, command string, data string, ttl int64) error {
 	path := fmt.Sprintf("/%s/notify/command/%s/%s", n.root, command, uuid)
-	log.Println("send:", path)
-
 	resp, err := n.client.Grant(n.context, ttl)
 	if err != nil {
 		return err
 	}
-
 	_, err = n.client.Put(n.context, path, data, clientv3.WithLease(resp.ID))
 	return err
 }
@@ -61,8 +58,6 @@ func (n *Notify) SendToWithTTL(uuid string, command string, data string, ttl int
 // uuid 唯一id, command 指令名
 func (n *Notify) RecvFrom(uuid string, command string) ([]string, error) {
 	path := fmt.Sprintf("/%s/notify/command/%s/%s", n.root, command, uuid)
-	log.Println("接收", path)
-
 	var response []string
 	resp, err := n.client.Get(n.context, path, clientv3.WithPrefix())
 	if err != nil {
@@ -94,6 +89,21 @@ func (n *Notify) RecvFromLoop(uuid string, command string, EventFunc func(value 
 				_, _ = n.client.Delete(n.context, path, clientv3.WithPrefix())
 				EventFunc(string(ev.Kv.Value))
 			}
+		}
+	}
+}
+
+// 接收广播
+func (n *Notify) RecvBroadcast(command string, EventFunc func(event *clientv3.Event)) {
+	path := fmt.Sprintf("/%s/notify/command/%s", n.root, command)
+	rch := n.client.Watch(n.context, path, clientv3.WithPrefix(), clientv3.WithRev(n.getRevision()))
+	for wResp := range rch {
+		for _, event := range wResp.Events {
+			err := n.setRevision(event.Kv.ModRevision + 1)
+			if err != nil {
+				log.Println(err)
+			}
+			EventFunc(event)
 		}
 	}
 }

@@ -44,9 +44,13 @@ func main() {
 	}
 	fmt.Println(resp)
 
-	// 循环接收指令
+	// 循环接收uuid的指令
 	n.RecvFromLoop(uuid, "upgrade", func(value string) {
 		fmt.Println(value)
 	})
 
+	// 接收广播
+	n.RecvBroadcast("register", func(event *clientv3.Event) {
+		fmt.Println(event)
+	})
 }
