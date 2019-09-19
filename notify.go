@@ -43,14 +43,28 @@ func (n *Notify) SendTo(uuid string, command string, data string) error {
 }
 
 // 发送
-// uuid 唯一id,command 指令, data 指令数据, ttl 存活时间
-func (n *Notify) SendToWithTTL(uuid string, command string, data string, ttl int64) error {
+// uuid 唯一id,command 指令, data 指令数据, ttl 存活时间, keepAlive 持续保持
+func (n *Notify) SendToWithTTL(uuid string, command string, data string, ttl int64, keepAlive bool) error {
 	path := fmt.Sprintf("/%s/notify/command/%s/%s", n.root, command, uuid)
 	resp, err := n.client.Grant(n.context, ttl)
 	if err != nil {
 		return err
 	}
 	_, err = n.client.Put(n.context, path, data, clientv3.WithLease(resp.ID))
+	if err != nil {
+		return err
+	}
+
+	if keepAlive {
+		ch, err := n.client.KeepAlive(n.context, resp.ID)
+		if err != nil {
+			return err
+		}
+		select {
+		case <-ch:
+		}
+	}
+
 	return err
 }
 

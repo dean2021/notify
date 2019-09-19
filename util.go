@@ -19,11 +19,10 @@ package notify
 import (
 	"github.com/sirupsen/logrus"
 	"strconv"
-	"unsafe"
 )
 
 func bytes2str(b []byte) string {
-	return *(*string)(unsafe.Pointer(&b))
+	return string(b)
 }
 
 func BytesToInt64(buf []byte) int64 {
@@ -31,6 +30,5 @@ func BytesToInt64(buf []byte) int64 {
 	if err != nil {
 		logrus.Error(err)
 	}
-
 	return value
 }
