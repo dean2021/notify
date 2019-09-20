@@ -60,8 +60,8 @@ func (n *Notify) SendToWithTTL(uuid string, command string, data string, ttl int
 		if err != nil {
 			return err
 		}
-		for k := range ch {
-			log.Println("TTL:", k)
+
+		for range ch {
 		}
 	}
 
