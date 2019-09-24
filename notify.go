@@ -34,7 +34,6 @@ type Notify struct {
 // uuid 唯一id,command 指令, data 指令数据
 func (n *Notify) SendTo(uuid string, command string, data string) error {
 	path := fmt.Sprintf("/%s/notify/command/%s/%s", n.root, command, uuid)
-	log.Println("send:", path)
 	_, err := n.client.Put(n.context, path, data)
 	if err != nil {
 		return err
@@ -120,6 +119,17 @@ func (n *Notify) RecvBroadcast(command string, EventFunc func(event *clientv3.Ev
 			EventFunc(event)
 		}
 	}
+}
+
+// 发送广播
+func (n *Notify) SendBroadcast(command string, data string, ttl int64) error {
+	path := fmt.Sprintf("/%s/notify/command/%s", n.root, command)
+	resp, err := n.client.Grant(n.context, ttl)
+	if err != nil {
+		return err
+	}
+	_, err = n.client.Put(n.context, path, data, clientv3.WithLease(resp.ID))
+	return err
 }
 
 // 保存当前命令版本
